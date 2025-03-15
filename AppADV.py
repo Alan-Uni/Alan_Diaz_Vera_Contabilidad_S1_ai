@@ -2,10 +2,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# Título de la aplicación
 st.title("Sistema Contable Básico")
 
-# Estilos CSS para las tablas
 st.markdown(
     """
     <style>
@@ -29,7 +27,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Inicialización de variables de estado
 if 'transacciones' not in st.session_state:
     st.session_state.transacciones = []
 
@@ -43,7 +40,6 @@ if 'balances' not in st.session_state:
 if 'libro_mayor' not in st.session_state:
     st.session_state.libro_mayor = {}
 
-# Función para mostrar el Balance General
 def mostrar_balance_general():
     st.subheader("Balance General")
     st.write("### Activo")
@@ -53,7 +49,6 @@ def mostrar_balance_general():
     st.write("### Capital")
     st.dataframe(pd.DataFrame.from_dict(st.session_state.balances["Capital"], orient="index", columns=["Monto"]))
 
-# Función para actualizar los balances y el libro mayor
 def actualizar_balances(transaccion):
     for cuenta, monto in transaccion["cargos"].items():
         if cuenta in st.session_state.balances["Activo"]:
@@ -63,7 +58,6 @@ def actualizar_balances(transaccion):
         elif cuenta in st.session_state.balances["Capital"]:
             st.session_state.balances["Capital"][cuenta] += monto
 
-        # Actualizar el libro mayor para cargos
         if cuenta not in st.session_state.libro_mayor:
             st.session_state.libro_mayor[cuenta] = {"Cargos": [], "Abonos": []}
         st.session_state.libro_mayor[cuenta]["Cargos"].append(monto)
@@ -76,28 +70,23 @@ def actualizar_balances(transaccion):
         elif cuenta in st.session_state.balances["Capital"]:
             st.session_state.balances["Capital"][cuenta] -= monto
 
-        # Actualizar el libro mayor para abonos
         if cuenta not in st.session_state.libro_mayor:
             st.session_state.libro_mayor[cuenta] = {"Cargos": [], "Abonos": []}
         st.session_state.libro_mayor[cuenta]["Abonos"].append(monto)
 
-# Menú de opciones
 option = st.sidebar.selectbox(
     "Selecciona una operación",
     ["Asiento de apertura", "Compra en efectivo", "Compra a crédito", "Compra combinada", "Anticipo de clientes", "Compra de papelería", "Pago de rentas anticipadas"]
 )
 
-# Función para registrar transacciones
 def registrar_transaccion(transaccion):
     transaccion["fecha"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Agregar fecha
     st.session_state.transacciones.append(transaccion)
     actualizar_balances(transaccion)
     st.success("Transacción registrada correctamente.")
 
-# Mostrar el Balance General en todo momento (fuera de los condicionales de transacciones)
 mostrar_balance_general()
 
-# Lógica para cada opción (esto ya está en tu código)
 if option == "Asiento de apertura":
     st.subheader("Asiento de Apertura")
     caja = st.number_input("Caja", value=50000)
@@ -129,7 +118,6 @@ if option == "Asiento de apertura":
         }
         registrar_transaccion(transaccion)
 
-# Repite este patrón para las demás transacciones...
 elif option == "Compra en efectivo":
     st.subheader("Compra en Efectivo")
     mercancias = st.number_input("Mercancías", value=15000)
@@ -248,7 +236,6 @@ elif option == "Pago de rentas anticipadas":
         }
         registrar_transaccion(transaccion)
 
-# Mostrar transacciones registradas (Libro Diario en formato "T")
 st.subheader("Libro Diario")
 for transaccion in st.session_state.transacciones:
     st.write(f"**Transacción:** {transaccion['tipo']} - **Fecha:** {transaccion['fecha']}")
@@ -263,7 +250,6 @@ for transaccion in st.session_state.transacciones:
         st.dataframe(abonos)
     st.write("---")
 
-# Mostrar Balanza de Comprobación
 st.subheader("Balanza de Comprobación")
 balanza = {
     "Cuenta": list(st.session_state.balances["Activo"].keys()) + list(st.session_state.balances["Pasivo"].keys()) + list(st.session_state.balances["Capital"].keys()),
@@ -271,46 +257,34 @@ balanza = {
     "Haber": [max(0, -st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] + [max(0, -st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] + [max(0, -st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"]]
 }
 
-# Crear DataFrame de la balanza
 balanza_df = pd.DataFrame(balanza)
 
-# Sumar los totales de "Debe" y "Haber"
 total_debe = balanza_df["Debe"].sum()
 total_haber = balanza_df["Haber"].sum()
 
-# Mostrar la balanza de comprobación
 st.dataframe(balanza_df)
 
-# Mostrar los totales
 st.write(f"**Total Debe:** {total_debe}")
 st.write(f"**Total Haber:** {total_haber}")
 
-# Mostrar el Libro Mayor con desglose de movimientos
 st.subheader("Libro Mayor")
 
-# Mostrar una tabla para cada cuenta con desglose de movimientos
 for cuenta, movimientos in st.session_state.libro_mayor.items():
     st.write(f"**Cuenta:** {cuenta}")
     
-    # Crear listas para cargos y abonos
     cargos = movimientos["Cargos"]
     abonos = movimientos["Abonos"]
     
-    # Crear DataFrame para la cuenta actual
     data = []
     
-    # Agregar cargos
     for i, cargo in enumerate(cargos):
         data.append({"Movimiento": f"Cargo {i+1}", "Monto": cargo, "Tipo": "Cargo"})
     
-    # Agregar abonos
     for i, abono in enumerate(abonos):
         data.append({"Movimiento": f"Abono {i+1}", "Monto": abono, "Tipo": "Abono"})
     
-    # Crear DataFrame
     df_cuenta = pd.DataFrame(data)
     
-    # Calcular totales
     total_cargos = sum(cargos)
     total_abonos = sum(abonos)
     diferencia = total_cargos - total_abonos
@@ -321,16 +295,13 @@ for cuenta, movimientos in st.session_state.libro_mayor.items():
     else:
         mayor = "Iguales"
     
-    # Agregar fila de totales al DataFrame
     df_totales = pd.DataFrame({
         "Movimiento": ["Totales"],
         "Monto": [abs(diferencia)],
         "Tipo": [mayor]
     })
     
-    # Concatenar el DataFrame de movimientos con el de totales
     df_final = pd.concat([df_cuenta, df_totales], ignore_index=True)
     
-    # Mostrar la tabla
     st.dataframe(df_final)
     st.write("---")
