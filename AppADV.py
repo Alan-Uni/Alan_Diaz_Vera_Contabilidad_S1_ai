@@ -43,11 +43,19 @@ if 'libro_mayor' not in st.session_state:
 def mostrar_balance_general():
     st.subheader("Balance General")
     st.write("### Activo")
-    st.dataframe(pd.DataFrame.from_dict(st.session_state.balances["Activo"], orient="index", columns=["Monto"]))
+    activo_df = pd.DataFrame.from_dict(st.session_state.balances["Activo"], orient="index", columns=["Monto"])
+    activo_df["Monto"] = activo_df["Monto"].abs() 
+    st.dataframe(activo_df)
+
     st.write("### Pasivo")
-    st.dataframe(pd.DataFrame.from_dict(st.session_state.balances["Pasivo"], orient="index", columns=["Monto"]))
+    pasivo_df = pd.DataFrame.from_dict(st.session_state.balances["Pasivo"], orient="index", columns=["Monto"])
+    pasivo_df["Monto"] = pasivo_df["Monto"].abs()  
+    st.dataframe(pasivo_df)
+
     st.write("### Capital")
-    st.dataframe(pd.DataFrame.from_dict(st.session_state.balances["Capital"], orient="index", columns=["Monto"]))
+    capital_df = pd.DataFrame.from_dict(st.session_state.balances["Capital"], orient="index", columns=["Monto"])
+    capital_df["Monto"] = capital_df["Monto"].abs() 
+    st.dataframe(capital_df)
 
 def actualizar_balances(transaccion):
     for cuenta, monto in transaccion["cargos"].items():
@@ -80,7 +88,7 @@ option = st.sidebar.selectbox(
 )
 
 def registrar_transaccion(transaccion):
-    transaccion["fecha"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Agregar fecha
+    transaccion["fecha"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  
     st.session_state.transacciones.append(transaccion)
     actualizar_balances(transaccion)
     st.success("Transacción registrada correctamente.")
@@ -239,8 +247,13 @@ elif option == "Pago de rentas anticipadas":
 st.subheader("Libro Diario")
 for transaccion in st.session_state.transacciones:
     st.write(f"**Transacción:** {transaccion['tipo']} - **Fecha:** {transaccion['fecha']}")
+    
     cargos = pd.DataFrame.from_dict(transaccion["cargos"], orient="index", columns=["Monto"])
+    cargos["Monto"] = cargos["Monto"].abs()  
+    
     abonos = pd.DataFrame.from_dict(transaccion["abonos"], orient="index", columns=["Monto"])
+    abonos["Monto"] = abonos["Monto"].abs()  
+    
     col1, col2 = st.columns(2)
     with col1:
         st.write("**Cargos**")
@@ -253,8 +266,8 @@ for transaccion in st.session_state.transacciones:
 st.subheader("Balanza de Comprobación")
 balanza = {
     "Cuenta": list(st.session_state.balances["Activo"].keys()) + list(st.session_state.balances["Pasivo"].keys()) + list(st.session_state.balances["Capital"].keys()),
-    "Debe": [max(0, st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] + [max(0, st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] + [max(0, st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"]],
-    "Haber": [max(0, -st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] + [max(0, -st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] + [max(0, -st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"]]
+    "Debe": [abs(st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] + [abs(st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] + [abs(st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"]],
+    "Haber": [abs(st.session_state.balances["Activo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Activo"]] + [abs(st.session_state.balances["Pasivo"].get(cuenta, 0)) for cuenta in st.session_state.balances["Pasivo"]] + [abs(st.session_state.balances["Capital"].get(cuenta, 0)) for cuenta in st.session_state.balances["Capital"]]
 }
 
 balanza_df = pd.DataFrame(balanza)
@@ -272,8 +285,8 @@ st.subheader("Libro Mayor")
 for cuenta, movimientos in st.session_state.libro_mayor.items():
     st.write(f"**Cuenta:** {cuenta}")
     
-    cargos = movimientos["Cargos"]
-    abonos = movimientos["Abonos"]
+    cargos = [abs(monto) for monto in movimientos["Cargos"]]  
+    abonos = [abs(monto) for monto in movimientos["Abonos"]]  
     
     data = []
     
